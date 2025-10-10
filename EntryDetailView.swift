@@ -15,6 +15,7 @@ struct EntryDetailView: View {
     @State private var showingDeleteAlert = false
     @State private var errorMessage = ""
     @State private var showError = false
+    @State private var showingEditView = false
     
     var body: some View {
         ScrollView {
@@ -59,6 +60,13 @@ struct EntryDetailView: View {
         .navigationTitle("Visit Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Edit") {
+                    showingEditView = true
+                }
+                .foregroundColor(.blue)
+            }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Delete") {
                     showingDeleteAlert = true
@@ -86,6 +94,9 @@ struct EntryDetailView: View {
             }
         } message: {
             Text("Are you sure you want to delete this visit? This action cannot be undone.")
+        }
+        .sheet(isPresented: $showingEditView) {
+            EditEntryView(visit: visit)
         }
     }
 }

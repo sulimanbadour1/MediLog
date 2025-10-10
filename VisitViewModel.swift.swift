@@ -97,6 +97,73 @@ do {
 }
 
 
+func updateVisit(visit: NSManagedObject, date: Date, pharmacyName: String?, symptoms: String, tags: [String], products: [[String: Any]], images: [UIImage]) async throws {
+guard let ctx = context else { 
+    throw AppError.dataError("Database connection failed. Please restart the app.")
+}
+
+print("Updating visit...")
+visit.setValue(date, forKey: "date")
+visit.setValue(pharmacyName, forKey: "pharmacyName")
+visit.setValue(symptoms, forKey: "symptomsText")
+visit.setValue(tags, forKey: "tags")
+print("Visit basic info updated")
+
+// Remove existing products and photos
+if let existingProducts = visit.value(forKey: "products") as? Set<NSManagedObject> {
+    for product in existingProducts {
+        ctx.delete(product)
+    }
+}
+
+if let existingPhotos = visit.value(forKey: "photos") as? Set<NSManagedObject> {
+    for photo in existingPhotos {
+        ctx.delete(photo)
+    }
+}
+
+// Add new products
+if let prodEntity = NSEntityDescription.entity(forEntityName: "Product", in: ctx) {
+    var prodSet = Set<NSManagedObject>()
+    for p in products {
+        let pe = NSManagedObject(entity: prodEntity, insertInto: ctx)
+        pe.setValue(UUID(), forKey: "id")
+        pe.setValue(p["name"] as? String ?? "", forKey: "name")
+        pe.setValue(p["dosage"] as? String ?? "", forKey: "dosage")
+        pe.setValue(Int16(p["quantity"] as? Int ?? 1), forKey: "quantity")
+        pe.setValue(p["notes"] as? String ?? "", forKey: "notes")
+        pe.setValue(p["expiryDate"] as? Date ?? Date(), forKey: "expiryDate")
+        prodSet.insert(pe)
+    }
+    visit.setValue(prodSet as NSSet, forKey: "products")
+}
+
+// Add new photos
+if let photoEntity = NSEntityDescription.entity(forEntityName: "Photo", in: ctx) {
+    var photoSet = Set<NSManagedObject>()
+    for img in images {
+        if let data = img.jpegData(compressionQuality: 0.7) {
+            let ph = NSManagedObject(entity: photoEntity, insertInto: ctx)
+            ph.setValue(UUID(), forKey: "id")
+            ph.setValue(data, forKey: "imageData")
+            photoSet.insert(ph)
+        }
+    }
+    visit.setValue(photoSet as NSSet, forKey: "photos")
+}
+
+print("Saving updated visit to Core Data...")
+do {
+    try ctx.save()
+    print("Successfully updated visit in Core Data")
+    fetchVisits()
+    print("Fetched visits, count: \(visits.count)")
+} catch {
+    print("Core Data update error: \(error)")
+    throw AppError.saveError("Failed to update visit in database. Please try again.")
+}
+}
+
 func deleteVisit(_ visit: NSManagedObject) async throws {
 guard let ctx = context else { 
     throw AppError.dataError("Database connection failed. Please restart the app.")
