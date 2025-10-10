@@ -8,6 +8,7 @@
 import SwiftUI
 import PhotosUI
 
+@available(iOS 16.0, *)
 struct AddEntryView: View {
     @EnvironmentObject var vm: VisitViewModel
     @Environment(\.dismiss) private var dismiss

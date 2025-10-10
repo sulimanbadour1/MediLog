@@ -20,7 +20,7 @@ MediLog is an iOS application designed to help users log, track, and manage thei
    git clone https://github.com/sulimanbadour1/MediLog.git
    ```
 
-2. **Open the project** in Xcode (iOS 16+ recommended).
+2. **Open the project** in Xcode (iOS 18+ recommended).
 
 3. **Build & Run** on a simulator or your iOS device.
 
@@ -28,7 +28,17 @@ MediLog is an iOS application designed to help users log, track, and manage thei
 
 ## Screenshots
 
-> _Feel free to add screenshots here!_
+### Main Interface
+![Main Interface](logos/Screenshot%202025-10-10%20at%202.41.22.png)
+*Clean and intuitive main interface showing your pharmacy visits*
+
+### Adding New Visit
+![Adding New Visit](logos/Screenshot%202025-10-10%20at%202.41.31.png)
+*Easy-to-use form for adding new pharmacy visits with symptoms and medication details*
+
+### Visit Details
+![Visit Details](logos/Screenshot%202025-10-10%20at%202.41.53.png)
+*Detailed view of individual visits with all information organized clearly*
 
 ## Technologies Used
 

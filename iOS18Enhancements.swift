@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  iOS18Enhancements.swift
 //  MediLog
 //
 //  Created by Sul on 05.10.2025.
@@ -8,181 +8,12 @@
 import SwiftUI
 internal import CoreData
 
-struct ContentView: View {
-    @EnvironmentObject var vm: VisitViewModel
-    @State private var showAdd = false
-    @State private var searchText = ""
-    @State private var selectedFilter: FilterOption = .all
-    @State private var showingFilters = false
-    @State private var errorMessage = ""
-    @State private var showError = false
-    @State private var successMessage = ""
-    @State private var showSuccess = false
-    
-    enum FilterOption: String, CaseIterable {
-        case all = "All"
-        case today = "Today"
-        case thisWeek = "This Week"
-        case thisMonth = "This Month"
-    }
-    
-    var filteredVisits: [NSManagedObject] {
-        let visits = vm.visits
-        
-        // Apply search filter
-        let searchFiltered = searchText.isEmpty ? visits : visits.filter { visit in
-            let symptoms = (visit.value(forKey: "symptomsText") as? String) ?? ""
-            let pharmacy = (visit.value(forKey: "pharmacyName") as? String) ?? ""
-            return symptoms.localizedCaseInsensitiveContains(searchText) ||
-                   pharmacy.localizedCaseInsensitiveContains(searchText)
-        }
-        
-        // Apply date filter
-        switch selectedFilter {
-        case .all:
-            return searchFiltered
-        case .today:
-            return searchFiltered.filter { visit in
-                guard let date = visit.value(forKey: "date") as? Date else { return false }
-                return Calendar.current.isDateInToday(date)
-            }
-        case .thisWeek:
-            return searchFiltered.filter { visit in
-                guard let date = visit.value(forKey: "date") as? Date else { return false }
-                return Calendar.current.isDate(date, equalTo: Date(), toGranularity: .weekOfYear)
-            }
-        case .thisMonth:
-            return searchFiltered.filter { visit in
-                guard let date = visit.value(forKey: "date") as? Date else { return false }
-                return Calendar.current.isDate(date, equalTo: Date(), toGranularity: .month)
-            }
-        }
-    }
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Custom header with logo
-                AppHeaderView()
-                    .padding(.bottom, 8)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .top).combined(with: .opacity),
-                        removal: .move(edge: .top).combined(with: .opacity)
-                    ))
-                
-                // Error messages with iOS 18 animations
-                VStack(spacing: 8) {
-                    ErrorMessageView(
-                        message: errorMessage,
-                        isVisible: showError,
-                        onDismiss: { 
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                showError = false
-                            }
-                        }
-                    )
-                    
-                    SuccessMessageView(
-                        message: successMessage,
-                        isVisible: showSuccess,
-                        onDismiss: { 
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                showSuccess = false
-                            }
-                        }
-                    )
-                }
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showError)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showSuccess)
-                
-                // Header with stats
-                HeaderStatsView(visitCount: vm.visits.count)
-                    .padding(.bottom, 8)
-                
-                // Search and filter bar
-                SearchAndFilterView(
-                    searchText: $searchText,
-                    selectedFilter: $selectedFilter,
-                    showingFilters: $showingFilters
-                )
-                .padding(.bottom, 16)
-                
-                // Visits list with iOS 18 enhancements
-                if filteredVisits.isEmpty {
-                    EmptyStateView(searchText: searchText)
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity)
-                        ))
-                } else {
-                    List {
-                        ForEach(filteredVisits, id: \.objectID) { visit in
-                            NavigationLink(destination: EntryDetailView(visit: visit)) {
-                                ModernVisitRowView(visit: visit)
-                            }
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                            .listRowSeparator(.hidden)
-                            .transition(.asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                removal: .move(edge: .leading).combined(with: .opacity)
-                            ))
-                        }
-                        .onDelete(perform: deleteVisits)
-                    }
-                    .listStyle(PlainListStyle())
-                    .scrollContentBackground(.hidden)
-                    .background(Color(.systemGroupedBackground))
-                }
-            }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showAdd = true }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                    }
-                }
-            }
-            .sheet(isPresented: $showAdd) {
-                EnhancedAddEntryView()
-            }
-            .onAppear { 
-                vm.fetchVisits() 
-            }
-        }
-    }
-    
-    private func deleteVisits(offsets: IndexSet) {
-        Task {
-            do {
-                for index in offsets {
-                    let visit = filteredVisits[index]
-                    try await vm.deleteVisit(visit)
-                }
-                await MainActor.run {
-                    successMessage = "Visit deleted successfully"
-                    showSuccess = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                        showSuccess = false
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = "Failed to delete visit: \(error.localizedDescription)"
-                    showError = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                        showError = false
-                    }
-                }
-            }
-        }
-    }
-}
+// MARK: - iOS 18 Enhanced Components
 
-struct HeaderStatsView: View {
+/// Enhanced header with iOS 18 animations and effects
+struct iOS18HeaderView: View {
     let visitCount: Int
+    @State private var isAnimating = false
     
     var body: some View {
         HStack(spacing: 20) {
@@ -191,10 +22,12 @@ struct HeaderStatsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .textCase(.uppercase)
+                
                 Text("\(visitCount)")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
+                    .contentTransition(.numericText())
             }
             
             Spacer()
@@ -204,10 +37,12 @@ struct HeaderStatsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .textCase(.uppercase)
+                
                 Text("\(visitCount)")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.blue)
+                    .contentTransition(.numericText())
             }
         }
         .padding(.horizontal, 20)
@@ -218,13 +53,29 @@ struct HeaderStatsView: View {
                 .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         )
         .padding(.horizontal, 16)
+        .scaleEffect(isAnimating ? 1.02 : 1.0)
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isAnimating)
+        .onAppear {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.2)) {
+                isAnimating = true
+            }
+        }
     }
 }
 
-struct SearchAndFilterView: View {
+/// Enhanced search bar with iOS 18 features
+struct iOS18SearchBar: View {
     @Binding var searchText: String
-    @Binding var selectedFilter: ContentView.FilterOption
+    @Binding var selectedFilter: FilterOption
     @Binding var showingFilters: Bool
+    @FocusState private var isSearchFocused: Bool
+    
+    enum FilterOption: String, CaseIterable {
+        case all = "All"
+        case today = "Today"
+        case thisWeek = "This Week"
+        case thisMonth = "This Month"
+    }
     
     var body: some View {
         HStack(spacing: 12) {
@@ -232,17 +83,27 @@ struct SearchAndFilterView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
                     .font(.system(size: 16))
+                    .symbolEffect(.bounce, value: isSearchFocused)
                 
                 TextField("Search visits...", text: $searchText)
                     .textFieldStyle(PlainTextFieldStyle())
                     .font(.body)
+                    .focused($isSearchFocused)
+                    .onSubmit {
+                        // Handle search submission
+                    }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSearchFocused ? Color.blue : Color.clear, lineWidth: 2)
+                    )
             )
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isSearchFocused)
             
             Button(action: { showingFilters.toggle() }) {
                 Image(systemName: "line.3.horizontal.decrease.circle")
@@ -253,38 +114,51 @@ struct SearchAndFilterView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(selectedFilter == .all ? Color(.systemGray6) : Color.blue.opacity(0.1))
                     )
+                    .symbolEffect(.bounce, value: showingFilters)
             }
         }
         .padding(.horizontal, 16)
         .sheet(isPresented: $showingFilters) {
-            FilterView(selectedFilter: $selectedFilter)
+            iOS18FilterView(selectedFilter: $selectedFilter)
         }
     }
 }
 
-struct FilterView: View {
-    @Binding var selectedFilter: ContentView.FilterOption
+/// Enhanced filter view with iOS 18 animations
+struct iOS18FilterView: View {
+    @Binding var selectedFilter: iOS18SearchBar.FilterOption
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
-                ForEach(ContentView.FilterOption.allCases, id: \.self) { filter in
+                ForEach(iOS18SearchBar.FilterOption.allCases, id: \.self) { filter in
                     HStack {
                         Text(filter.rawValue)
+                            .font(.body)
+                        
                         Spacer()
+                        
                         if selectedFilter == filter {
                             Image(systemName: "checkmark")
                                 .foregroundColor(.blue)
+                                .symbolEffect(.bounce, value: selectedFilter == filter)
                         }
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        selectedFilter = filter
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            selectedFilter = filter
+                        }
                         dismiss()
                     }
+                    .listRowBackground(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(selectedFilter == filter ? Color.blue.opacity(0.1) : Color.clear)
+                    )
                 }
             }
+            .listStyle(PlainListStyle())
             .navigationTitle("Filter Visits")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -293,11 +167,15 @@ struct FilterView: View {
                 }
             }
         }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 }
 
-struct ModernVisitRowView: View {
+/// Enhanced visit row with iOS 18 features
+struct iOS18VisitRowView: View {
     let visit: NSManagedObject
+    @State private var isPressed = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -337,11 +215,11 @@ struct ModernVisitRowView: View {
                 }
             }
             
-            // Tags
+            // Enhanced tags with iOS 18 animations
             if let tags = visit.value(forKey: "tags") as? [String], !tags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(tags.prefix(3), id: \.self) { tag in
+                        ForEach(Array(tags.prefix(3).enumerated()), id: \.offset) { index, tag in
                             Text(tag)
                                 .font(.caption)
                                 .fontWeight(.medium)
@@ -352,6 +230,11 @@ struct ModernVisitRowView: View {
                                         .fill(Color.blue.opacity(0.1))
                                 )
                                 .foregroundColor(.blue)
+                                .transition(.asymmetric(
+                                    insertion: .scale.combined(with: .opacity),
+                                    removal: .scale.combined(with: .opacity)
+                                ))
+                                .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(Double(index) * 0.1), value: tags)
                         }
                         
                         if tags.count > 3 {
@@ -371,16 +254,19 @@ struct ModernVisitRowView: View {
                 }
             }
             
-            // Products count
+            // Products count with enhanced styling
             if let products = visit.value(forKey: "products") as? Set<NSManagedObject>, !products.isEmpty {
                 HStack(spacing: 6) {
                     Image(systemName: "pills")
                         .foregroundColor(.green)
                         .font(.caption)
+                        .symbolEffect(.bounce, value: products.count)
+                    
                     Text("\(products.count) product\(products.count == 1 ? "" : "s")")
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundColor(.secondary)
+                        .contentTransition(.numericText())
                 }
             }
         }
@@ -393,35 +279,60 @@ struct ModernVisitRowView: View {
         )
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isPressed)
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                isPressed = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    isPressed = false
+                }
+            }
+        }
     }
 }
 
-struct EmptyStateView: View {
+/// Enhanced empty state with iOS 18 animations
+struct iOS18EmptyStateView: View {
     let searchText: String
+    @State private var isAnimating = false
     
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: searchText.isEmpty ? "cross.case" : "magnifyingglass")
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
+                .symbolEffect(.bounce, value: isAnimating)
             
             Text(searchText.isEmpty ? "No visits yet" : "No results found")
                 .font(.title2)
                 .fontWeight(.medium)
+                .contentTransition(.opacity)
             
             Text(searchText.isEmpty ? "Tap + to add your first visit" : "Try adjusting your search")
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+                .contentTransition(.opacity)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.2)) {
+                isAnimating = true
+            }
+        }
     }
 }
 
-struct AppHeaderView: View {
+/// Enhanced app header with iOS 18 effects
+struct iOS18AppHeaderView: View {
+    @State private var isAnimating = false
+    
     var body: some View {
         HStack(spacing: 12) {
-            // Logo
+            // Enhanced logo with iOS 18 animations
             ZStack {
                 Circle()
                     .fill(
@@ -433,23 +344,28 @@ struct AppHeaderView: View {
                     )
                     .frame(width: 50, height: 50)
                     .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
+                    .scaleEffect(isAnimating ? 1.05 : 1.0)
+                    .animation(.spring(response: 1.0, dampingFraction: 0.6).repeatForever(autoreverses: true), value: isAnimating)
                 
                 Image("Logo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 30, height: 30)
+                    .symbolEffect(.bounce, value: isAnimating)
             }
             
-            // App name and subtitle
+            // App name and subtitle with enhanced typography
             VStack(alignment: .leading, spacing: 2) {
                 Text("MediLog")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
+                    .contentTransition(.opacity)
                 
                 Text("Health Companion")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .contentTransition(.opacity)
             }
             
             Spacer()
@@ -462,5 +378,10 @@ struct AppHeaderView: View {
                 .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         )
         .padding(.horizontal, 16)
+        .onAppear {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.1)) {
+                isAnimating = true
+            }
+        }
     }
 }

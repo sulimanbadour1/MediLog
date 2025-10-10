@@ -11,15 +11,14 @@ internal import CoreData
 
 @main
 struct MediLogApp: App {
-let persistenceController = PersistenceController.shared
-@StateObject var visitVM = VisitViewModel()
-
-
-var body: some Scene {
-WindowGroup {
-SplashScreenView()
-.environment(\.managedObjectContext, persistenceController.container.viewContext)
-.environmentObject(visitVM)
-}
-}
+    let persistenceController = PersistenceController.shared
+    @StateObject var visitVM = VisitViewModel()
+    
+    var body: some Scene {
+        WindowGroup {
+            SplashScreenView()
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .environmentObject(visitVM)
+        }
+    }
 }
