@@ -71,12 +71,17 @@ if __name__ == "__main__":
     print("You need a 1024x1024 PNG image as the source.")
     print()
     
-    # Get source image path from user
-    source_path = input("Enter path to your 1024x1024 source image: ").strip()
-    
-    if not source_path:
-        print("❌ No source image path provided.")
-        exit(1)
+    # Check for sample icon first, then get from user
+    sample_path = "sample_app_icon_1024x1024.png"
+    if os.path.exists(sample_path):
+        source_path = sample_path
+        print(f"📱 Using sample icon: {source_path}")
+    else:
+        source_path = input("Enter path to your 1024x1024 source image: ").strip()
+        
+        if not source_path:
+            print("❌ No source image path provided.")
+            exit(1)
     
     # Set output directory
     output_directory = "generated_app_icons"
