@@ -27,15 +27,32 @@ struct SplashScreenView: View {
                 VStack(spacing: 30) {
                     // App icon
                     ZStack {
+                        // Outer glow ring
                         Circle()
-                            .fill(Color.white.opacity(0.2))
-                            .frame(width: 120, height: 120)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 3)
+                            .frame(width: 140, height: 140)
                             .scaleEffect(isAnimating ? 1.1 : 1.0)
+                            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
+                        
+                        // Main circle
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 120, height: 120)
+                            .scaleEffect(isAnimating ? 1.05 : 1.0)
                             .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
                         
-                        Image(systemName: "cross.case.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.white)
+                        // Logo icon
+                        Image("Logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 50, height: 50)
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                     }
                     
                     // App name

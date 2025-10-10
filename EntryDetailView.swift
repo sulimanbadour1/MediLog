@@ -312,4 +312,3 @@ struct PhotosCardView: View {
         .cornerRadius(16)
     }
 }
-/Users/mpmp/Desktop/Projects/ios/MediLog/MediLog/EnhancedAddEntryView.swift:187:111 Cannot infer contextual base in reference to member 'date'
