@@ -137,6 +137,10 @@ struct ContentView: View {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    MediLogLogo(size: 30, showText: false)
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showAdd = true }) {
                         Image(systemName: "plus.circle.fill")
