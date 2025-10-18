@@ -1,110 +1,90 @@
 #!/usr/bin/env python3
 """
-App Icon Generator for MediLog
-Creates all required app icon sizes from a base 1024x1024 image
+App Icon Generator for MediLog iOS App
+This script generates all required iOS app icon sizes from a single 1024x1024 source image.
 """
 
 import os
-from PIL import Image, ImageDraw
-import math
+from PIL import Image
 
-def create_medilog_icon(size):
-    """Create a MediLog app icon at the specified size"""
-    # Create a new image with transparent background
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
+def generate_app_icons(source_image_path, output_dir):
+    """
+    Generate all required iOS app icon sizes from a source image.
     
-    # Calculate dimensions based on size
-    center = size // 2
-    radius = int(size * 0.4)
-    cross_width = int(size * 0.08)
-    cross_length = int(size * 0.3)
+    Args:
+        source_image_path (str): Path to the source 1024x1024 image
+        output_dir (str): Directory to save the generated icons
+    """
     
-    # Create gradient background (simplified - solid blue)
-    draw.ellipse([center - radius, center - radius, center + radius, center + radius], 
-                fill=(0, 122, 255, 255))  # iOS Blue
-    
-    # Draw medical cross
-    # Vertical line
-    draw.rectangle([center - cross_width//2, center - cross_length//2, 
-                    center + cross_width//2, center + cross_length//2], 
-                   fill=(255, 255, 255, 255))
-    
-    # Horizontal line
-    draw.rectangle([center - cross_length//2, center - cross_width//2, 
-                    center + cross_length//2, center + cross_width//2], 
-                   fill=(255, 255, 255, 255))
-    
-    # Add small decorative dots
-    dot_size = max(2, size // 30)
-    dot_positions = [
-        (center - radius//2, center - radius//2),
-        (center + radius//2, center - radius//2),
-        (center - radius//2, center + radius//2),
-        (center + radius//2, center + radius//2)
+    # Required iOS app icon sizes
+    icon_sizes = [
+        ("AppIcon-20@2x.png", 40, 40),      # 20pt @2x
+        ("AppIcon-20@3x.png", 60, 60),      # 20pt @3x
+        ("AppIcon-29@2x.png", 58, 58),      # 29pt @2x
+        ("AppIcon-29@3x.png", 87, 87),      # 29pt @3x
+        ("AppIcon-40@2x.png", 80, 80),      # 40pt @2x
+        ("AppIcon-40@3x.png", 120, 120),    # 40pt @3x
+        ("AppIcon-60@2x.png", 120, 120),    # 60pt @2x
+        ("AppIcon-60@3x.png", 180, 180),    # 60pt @3x
+        ("AppIcon-1024.png", 1024, 1024),   # App Store
     ]
     
-    for pos in dot_positions:
-        draw.ellipse([pos[0] - dot_size//2, pos[1] - dot_size//2, 
-                     pos[0] + dot_size//2, pos[1] + dot_size//2], 
-                    fill=(255, 255, 255, 100))
-    
-    return img
-
-def generate_app_icons():
-    """Generate all required app icon sizes"""
-    # Required sizes for iOS app icons
-    sizes = [
-        (20, 2),   # 20@2x
-        (20, 3),   # 20@3x
-        (29, 2),   # 29@2x
-        (29, 3),   # 29@3x
-        (40, 2),   # 40@2x
-        (40, 3),   # 40@3x
-        (60, 2),   # 60@2x
-        (60, 3),   # 60@3x
-        (1024, 1)  # 1024@1x
-    ]
-    
-    # Create output directory
-    output_dir = "Assets.xcassets/AppIcon.appiconset"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Generate icons
-    for base_size, scale in sizes:
-        actual_size = base_size * scale
-        icon = create_medilog_icon(actual_size)
-        
-        # Determine filename
-        if base_size == 20 and scale == 2:
-            filename = "AppIcon-20@2x.png"
-        elif base_size == 20 and scale == 3:
-            filename = "AppIcon-20@3x.png"
-        elif base_size == 29 and scale == 2:
-            filename = "AppIcon-29@2x.png"
-        elif base_size == 29 and scale == 3:
-            filename = "AppIcon-29@3x.png"
-        elif base_size == 40 and scale == 2:
-            filename = "AppIcon-40@2x.png"
-        elif base_size == 40 and scale == 3:
-            filename = "AppIcon-40@3x.png"
-        elif base_size == 60 and scale == 2:
-            filename = "AppIcon-60@2x.png"
-        elif base_size == 60 and scale == 3:
-            filename = "AppIcon-60@3x.png"
-        elif base_size == 1024 and scale == 1:
-            filename = "AppIcon-1024.png"
-        
-        # Save icon
-        icon.save(os.path.join(output_dir, filename), "PNG")
-        print(f"Generated {filename} ({actual_size}x{actual_size})")
+    try:
+        # Open the source image
+        with Image.open(source_image_path) as source:
+            # Ensure the source image is 1024x1024
+            if source.size != (1024, 1024):
+                print(f"Warning: Source image is {source.size}, expected (1024, 1024)")
+                source = source.resize((1024, 1024), Image.Resampling.LANCZOS)
+            
+            # Create output directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Generate each icon size
+            for filename, width, height in icon_sizes:
+                output_path = os.path.join(output_dir, filename)
+                
+                # Resize the image
+                resized = source.resize((width, height), Image.Resampling.LANCZOS)
+                
+                # Save the icon
+                resized.save(output_path, "PNG", optimize=True)
+                print(f"Generated: {filename} ({width}x{height})")
+            
+            print(f"\n✅ All app icons generated successfully in: {output_dir}")
+            print("\nNext steps:")
+            print("1. Copy the generated PNG files to Assets.xcassets/AppIcon.appiconset/")
+            print("2. Build and run your app to see the new icon on the home screen")
+            
+    except FileNotFoundError:
+        print(f"❌ Error: Source image not found at {source_image_path}")
+        print("Please provide a 1024x1024 PNG image as the source.")
+    except Exception as e:
+        print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
-    print("Generating MediLog app icons...")
-    generate_app_icons()
-    print("✅ All app icons generated successfully!")
-    print("\nTo use these icons:")
-    print("1. Open your project in Xcode")
-    print("2. Navigate to Assets.xcassets > AppIcon")
-    print("3. Drag the generated PNG files to their respective slots")
-    print("4. Build and run your app!")
+    # Instructions for the user
+    print("🏥 MediLog App Icon Generator")
+    print("=" * 40)
+    print()
+    print("This script generates all required iOS app icon sizes.")
+    print("You need a 1024x1024 PNG image as the source.")
+    print()
+    
+    # Check for sample icon first, then get from user
+    sample_path = "sample_app_icon_1024x1024.png"
+    if os.path.exists(sample_path):
+        source_path = sample_path
+        print(f"📱 Using sample icon: {source_path}")
+    else:
+        source_path = input("Enter path to your 1024x1024 source image: ").strip()
+        
+        if not source_path:
+            print("❌ No source image path provided.")
+            exit(1)
+    
+    # Set output directory
+    output_directory = "generated_app_icons"
+    
+    # Generate the icons
+    generate_app_icons(source_path, output_directory)

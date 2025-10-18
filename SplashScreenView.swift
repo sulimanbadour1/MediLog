@@ -94,7 +94,10 @@ struct SplashScreenView: View {
                             .shadow(color: .white.opacity(0.3), radius: 10, x: 0, y: 0)
                         
                         // Logo icon with enhanced effects
-                        MediLogLogoIcon(size: 50)
+                        Image("Logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 50, height: 50)
                             .scaleEffect(logoScale)
                             .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                             .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: -1)

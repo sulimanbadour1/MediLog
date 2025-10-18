@@ -1,10 +1,4 @@
 # MediLog
-
-<div align="center">
-  <img src="Assets.xcassets/MediLogLogo.imageset/MediLogLogo@2x.png" alt="MediLog Logo" width="120" height="120">
-  <h3>Your Health Companion</h3>
-</div>
-
 MediLog is an iOS application designed to help users log, track, and manage their pharmacy visits, medication purchases, and health symptoms. With an intuitive, privacy-respecting interface, MediLog enables users to easily create detailed records of their medical visits, including photos of receipts or prescription labels, tagged symptoms, and medications purchased.
 
 ## Features
