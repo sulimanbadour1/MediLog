@@ -34,70 +34,108 @@ struct EnhancedAddEntryView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Error messages
-                    VStack(spacing: 8) {
-                        ErrorMessageView(
-                            message: errorMessage,
-                            isVisible: showError,
-                            onDismiss: { 
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showError = false
-                                }
-                            }
-                        )
-                        
-                        SuccessMessageView(
-                            message: successMessage,
-                            isVisible: showSuccess,
-                            onDismiss: { 
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showSuccess = false
-                                }
-                            }
-                        )
-                        
-                        WarningMessageView(
-                            message: warningMessage,
-                            isVisible: showWarning,
-                            onDismiss: { 
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showWarning = false
-                                }
-                            }
-                        )
-                    }
-                    .animation(.easeInOut(duration: 0.3), value: showError)
-                    .animation(.easeInOut(duration: 0.3), value: showSuccess)
-                    .animation(.easeInOut(duration: 0.3), value: showWarning)
-                    
-                    // Header with date picker
-                    HeaderSectionView(date: $date)
-                    
-                    // Pharmacy section
-                    PharmacySectionView(pharmacyName: $pharmacyName)
-                    
-                    // Symptoms section
-                    SymptomsSectionView(symptoms: $symptoms, tagsText: $tagsText, tags: $tags)
-                    
-                    // Products section with barcode scanning
-                    ProductsSectionView(
-                        products: $products,
-                        showingBarcodeScanner: $showingBarcodeScanner,
-                        scannedBarcode: $scannedBarcode,
-                        showingProductLookup: $showingProductLookup,
-                        productLookupService: productLookupService
-                    )
-                    
-                    // Photos section
-                    PhotosSectionView(
-                        pickerItems: $pickerItems,
-                        images: $images
+            Form {
+                // Error messages
+                if showError {
+                    ErrorMessageView(
+                        message: errorMessage,
+                        isVisible: showError,
+                        onDismiss: { showError = false }
                     )
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                
+                if showSuccess {
+                    SuccessMessageView(
+                        message: successMessage,
+                        isVisible: showSuccess,
+                        onDismiss: { showSuccess = false }
+                    )
+                }
+                    
+                Section {
+                    DatePicker("Date", selection: $date)
+                    TextField("Pharmacy", text: $pharmacyName)
+                }
+                
+                Section("Symptoms") {
+                    TextEditor(text: $symptoms)
+                        .frame(minHeight: 100)
+                    
+                    HStack {
+                        TextField("Add tag", text: $tagsText)
+                        Button("Add") {
+                            let tag = tagsText.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !tag.isEmpty {
+                                tags.append(tag)
+                                tagsText = ""
+                            }
+                        }
+                    }
+                    
+                    if !tags.isEmpty {
+                        FlowTagsView(tags: $tags)
+                    }
+                }
+                
+                Section {
+                    ForEach(products.indices, id: \.self) { index in
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Product name", text: $products[index].name)
+                            HStack {
+                                TextField("Dosage", text: $products[index].dosage)
+                                Stepper("Qty: \(products[index].quantity)", value: $products[index].quantity, in: 1...10)
+                            }
+                            DatePicker("Expiry", selection: $products[index].expiryDate, displayedComponents: .date)
+                            TextField("Notes", text: $products[index].note)
+                        }
+                    }
+                    
+                    Button(action: { products.append(ProductRow()) }) {
+                        Label("Add Product", systemImage: "plus")
+                    }
+                    
+                    Button(action: { showingBarcodeScanner = true }) {
+                        Label("Scan Barcode", systemImage: "barcode.viewfinder")
+                    }
+                } header: {
+                    Text("Products")
+                }
+                
+                Section {
+                    PhotosPicker(
+                        selection: $pickerItems,
+                        maxSelectionCount: 4,
+                        matching: .images
+                    ) {
+                        Label("Add Photos", systemImage: "photo")
+                    }
+                    .onChange(of: pickerItems) { newItems in
+                        Task {
+                            images.removeAll()
+                            for item in newItems {
+                                if let data = try? await item.loadTransferable(type: Data.self),
+                                   let uiImage = UIImage(data: data) {
+                                    images.append(uiImage)
+                                }
+                            }
+                        }
+                    }
+                    
+                    if !images.isEmpty {
+                        ScrollView(.horizontal) {
+                            HStack {
+                                ForEach(images, id: \.self) { image in
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .frame(width: 80, height: 80)
+                                        .cornerRadius(8)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Photos")
+                }
             }
             .navigationTitle("New Visit")
             .navigationBarTitleDisplayMode(.inline)

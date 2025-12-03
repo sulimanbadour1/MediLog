@@ -62,86 +62,74 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Custom header with logo
-                AppHeaderView()
-                    .padding(.bottom, 8)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .top).combined(with: .opacity),
-                        removal: .move(edge: .top).combined(with: .opacity)
-                    ))
-                
-                // Error messages with iOS 18 animations
-                VStack(spacing: 8) {
+                // Minimal error messages
+                if showError {
                     ErrorMessageView(
                         message: errorMessage,
                         isVisible: showError,
-                        onDismiss: { 
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                showError = false
-                            }
-                        }
+                        onDismiss: { showError = false }
                     )
-                    
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                }
+                
+                if showSuccess {
                     SuccessMessageView(
                         message: successMessage,
                         isVisible: showSuccess,
-                        onDismiss: { 
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                showSuccess = false
-                            }
-                        }
+                        onDismiss: { showSuccess = false }
                     )
+                    .padding(.horizontal)
+                    .padding(.top, 8)
                 }
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showError)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showSuccess)
                 
-                // Header with stats
-                HeaderStatsView(visitCount: vm.visits.count)
-                    .padding(.bottom, 8)
+                // Simple search bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField("Search", text: $searchText)
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
                 
-                // Search and filter bar
-                SearchAndFilterView(
-                    searchText: $searchText,
-                    selectedFilter: $selectedFilter,
-                    showingFilters: $showingFilters
-                )
-                .padding(.bottom, 16)
-                
-                // Visits list with iOS 18 enhancements
+                // Visits list
                 if filteredVisits.isEmpty {
-                    EmptyStateView(searchText: searchText)
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity)
-                        ))
+                    VStack(spacing: 12) {
+                        Image(systemName: "cross.case")
+                            .font(.system(size: 50))
+                            .foregroundColor(.secondary)
+                        Text(searchText.isEmpty ? "No visits yet" : "No results")
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
                         ForEach(filteredVisits, id: \.objectID) { visit in
                             NavigationLink(destination: EntryDetailView(visit: visit)) {
-                                ModernVisitRowView(visit: visit)
+                                MinimalVisitRow(visit: visit)
                             }
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                            .listRowSeparator(.hidden)
-                            .transition(.asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                removal: .move(edge: .leading).combined(with: .opacity)
-                            ))
                         }
                         .onDelete(perform: deleteVisits)
                     }
-                    .listStyle(PlainListStyle())
-                    .scrollContentBackground(.hidden)
-                    .background(Color(.systemGroupedBackground))
+                    .listStyle(.plain)
                 }
             }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("MediLog")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showAdd = true }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
+                        Image(systemName: "plus")
                     }
                 }
             }
@@ -293,6 +281,35 @@ struct FilterView: View {
                 }
             }
         }
+    }
+}
+
+struct MinimalVisitRow: View {
+    let visit: NSManagedObject
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text((visit.value(forKey: "symptomsText") as? String) ?? "No symptoms")
+                .font(.body)
+                .lineLimit(2)
+            
+            HStack {
+                if let pharmacy = visit.value(forKey: "pharmacyName") as? String, !pharmacy.isEmpty {
+                    Text(pharmacy)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                if let date = visit.value(forKey: "date") as? Date {
+                    Text(date, style: .date)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 8)
     }
 }
 

@@ -18,44 +18,79 @@ struct EntryDetailView: View {
     @State private var showingEditView = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Error message
-                if showError {
-                    ErrorMessageView(
-                        message: errorMessage,
-                        isVisible: showError,
-                        onDismiss: { 
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showError = false
-                            }
-                        }
-                    )
+        Form {
+            if showError {
+                ErrorMessageView(
+                    message: errorMessage,
+                    isVisible: showError,
+                    onDismiss: { showError = false }
+                )
+            }
+            
+            Section {
+                if let date = visit.value(forKey: "date") as? Date {
+                    LabeledContent("Date") {
+                        Text(date, style: .date)
+                    }
                 }
                 
-                // Header card
-                HeaderCardView(visit: visit)
-                
-                // Symptoms card
-                SymptomsCardView(visit: visit)
-                
-                // Tags card
-                if let tags = visit.value(forKey: "tags") as? [String], !tags.isEmpty {
-                    TagsCardView(tags: tags)
-                }
-                
-                // Products card
-                if let products = visit.value(forKey: "products") as? Set<NSManagedObject>, !products.isEmpty {
-                    ProductsCardView(products: Array(products))
-                }
-                
-                // Photos card
-                if let photos = visit.value(forKey: "photos") as? Set<NSManagedObject>, !photos.isEmpty {
-                    PhotosCardView(photos: Array(photos))
+                if let pharmacy = visit.value(forKey: "pharmacyName") as? String, !pharmacy.isEmpty {
+                    LabeledContent("Pharmacy") {
+                        Text(pharmacy)
+                    }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 20)
+            
+            Section("Symptoms") {
+                Text((visit.value(forKey: "symptomsText") as? String) ?? "No symptoms")
+            }
+            
+            if let tags = visit.value(forKey: "tags") as? [String], !tags.isEmpty {
+                Section("Tags") {
+                    ForEach(tags, id: \.self) { tag in
+                        Text(tag)
+                    }
+                }
+            }
+            
+            if let products = visit.value(forKey: "products") as? Set<NSManagedObject>, !products.isEmpty {
+                Section("Products") {
+                    ForEach(Array(products), id: \.objectID) { product in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(product.value(forKey: "name") as? String ?? "Unknown")
+                                .fontWeight(.medium)
+                            if let dosage = product.value(forKey: "dosage") as? String, !dosage.isEmpty {
+                                Text("Dosage: \(dosage)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            if let expiryDate = product.value(forKey: "expiryDate") as? Date {
+                                Text("Expires: \(expiryDate, style: .date)")
+                                    .font(.caption)
+                                    .foregroundColor(expiryDate < Date() ? .red : .secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if let photos = visit.value(forKey: "photos") as? Set<NSManagedObject>, !photos.isEmpty {
+                Section("Photos") {
+                    ScrollView(.horizontal) {
+                        HStack {
+                            ForEach(Array(photos), id: \.objectID) { photo in
+                                if let imageData = photo.value(forKey: "imageData") as? Data,
+                                   let uiImage = UIImage(data: imageData) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .frame(width: 100, height: 100)
+                                        .cornerRadius(8)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         .navigationTitle("Visit Details")
         .navigationBarTitleDisplayMode(.inline)
